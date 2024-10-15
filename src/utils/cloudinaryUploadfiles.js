@@ -27,9 +27,7 @@ export async function UploadFiles(localFilePath) {
 
     } catch (error) {
         fs.unlinkSync(localFilePath);
-        console.log(error);
-        return ""
-
+        return error
     }
     // Optimize delivery by resizing and applying auto-format and auto-quality
 
