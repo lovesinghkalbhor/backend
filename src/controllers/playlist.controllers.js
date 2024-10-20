@@ -34,7 +34,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
 
     const playlist = await Playlist.create({
-        name, description, owner: mongoose.Types.ObjectId(userid),
+        name, description, owner: new mongoose.Types.ObjectId(userid),
     })
 
     if (!playlist) {
@@ -98,8 +98,8 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 
 
 
-    if (!playlistId) {
-        throw new ApiErrors(400, "playlistId is required")
+    if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+        throw new ApiErrors(400, "invalid playlistId ")
     }
 
 
@@ -135,15 +135,20 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiErrors(400, "playlistId is not valid")
     }
 
-    if (!!mongoose.Types.ObjectId.isValid(videoId)) {
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiErrors(400, "videoId is not valid")
     }
 
     const addedVideo = await Playlist.findById(playlistId);
-    addedVideo?.videos.push(videoId);
+
+    if (!addedVideo.videos.includes(videoId)) {
+        addedVideo.videos.push(videoId);
+    } else {
+        throw new ApiErrors(200, "video already exist");
+    }
 
     if (!addedVideo) {
-        throw new Error("Playlist not found");
+        throw new ApiErrors(400, "Playlist not found");
     }
 
     await addedVideo.save()
@@ -177,7 +182,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiErrors(400, "playlistId is not valid")
     }
 
-    if (!!mongoose.Types.ObjectId.isValid(videoId)) {
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiErrors(400, "videoId is not valid")
     }
 
@@ -213,8 +218,8 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params
 
 
-    if (!playlistId) {
-        throw new ApiErrors(400, "playlistId is required")
+    if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+        throw new ApiErrors(400, "playlistId is not valid")
     }
 
 
@@ -256,7 +261,8 @@ const updatePlaylist = asyncHandler(async (req, res) => {
 
     const playlist = await Playlist.findByIdAndUpdate(playlistId, {
         $set: { name, description }
-    })
+
+    }, { new: true })
 
     if (!playlist) {
         throw new ApiErrors(500, "Internal error playlist not updated in database")
