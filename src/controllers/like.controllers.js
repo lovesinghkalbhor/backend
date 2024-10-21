@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { Video } from "../models/video.models.js"
 import { Tweet } from "../models/tweet.models.js"
+import { Comment } from "../models/comment.models.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     //TODO: toggle like on video
@@ -78,11 +79,8 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
-    const { commentId } = req.params;
     //TODO: toggle like on comment
-
-
-
+    const { commentId } = req.params;
 
     const userId = req.user._id;
 
@@ -90,9 +88,9 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         throw new ApiErrors(400, 'invalid comment id')
     }
 
-    const video = await Video.findById(commentId)
+    const comment = await Comment.findById(commentId)
 
-    if (!video) {
+    if (!comment) {
         throw new ApiErrors(400, 'comment not found')
     }
 
@@ -111,7 +109,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         }
         else {
             likedComment.comment = commentId
-            await likedVideo.save()
+            await likedComment.save()
 
             return res.status(200).json(
                 new ApiResponse(201, { likedComment }, "comment liked successfully")
@@ -224,7 +222,10 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 
     const likedVideo = await Like.aggregate([
         {
-            $match: { likedBy: userid }, video: { $exists: true, $ne: null } // Ensures 'video' field is not null
+            $match: {
+                likedBy: userid, video: { $exists: true, $ne: null } // Ensures 'video' field is not null
+            }
+
 
         },
         {
