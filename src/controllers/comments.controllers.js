@@ -6,8 +6,53 @@ import { ApiErrors } from "../utils/ApiErrors.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
+
+    // check if video id is VALID else give error
+    // now check if video exist in the database esle give error
+    // Build the aggregation pipeline
+
+
+
+
+
     const { videoId } = req.params
     const { page = 1, limit = 10 } = req.query
+
+    // Check if videoId is valid
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        return res.status(400).json(
+            new ApiErrors(400, 'invalid video id')
+        );
+    }
+
+    // Build the aggregation pipeline
+    const pipeline = [
+        {
+            $match: { video: mongoose.Types.ObjectId(videoId) }, // Match comments for the specific video
+        },
+        {
+            $project: {
+                content: 1, // Include comment content
+                owner: 1,
+            },
+        },
+    ];
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+    };
+
+    const comments = await Comment.aggregatePaginate(Comment.aggregate(pipeline), options);
+
+    if (!comments) {
+        throw new ApiErrors(500, "internal error comment can not be fetched ")
+
+    }
+
+    // Return the paginated result
+    return res.status(200).json(
+        new ApiResponse(201, { comments }, "comment fetched successfully")
+    );
 
 })
 

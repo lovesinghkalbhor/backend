@@ -8,9 +8,60 @@ import { UploadFiles } from "../utils/cloudinaryUploadfiles.js"
 import { deleteCloudinaryImage } from "../utils/cloudinaryDeleteFile.js"
 
 
+// function for regex matching ragex
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
+
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+
+    //  sortBy will have these values: duration, createdAt, views
+
+    //  check if user id is not empty else give error
+    // check if userId is valid, if not then show error
+    // now find the videos by query, sortBy and sortType
+
+
+    const regexResult = escapeRegex(query)
+
+    const pipeline = [
+
+        {
+            $match: {
+                $or: [
+                    {
+                        title: regexResult,
+                        descreption: regexResult
+                    }
+                ]
+            }
+        },
+
+    ]
+
+    if (sortBy !== undefined) {
+        pipeline.push({ [sortBy]: sortType })
+    }
+
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+    };
+
+    const video = await Video.aggregatePaginate(Video.aggregate(pipeline), options)
+
+    if (!video) {
+        throw new ApiErrors(500, "internal error video can not be fetched ")
+
+    }
+
+    return res.status(200).json(
+        new ApiResponse(201, { video }, 'Video fetched successfully')
+    )
+
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
